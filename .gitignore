@@ -1,0 +1,8 @@
+# the video files
+videos/*
+videos_ac/*
+
+# the model files
+*.pth
+
+.DS_Store
