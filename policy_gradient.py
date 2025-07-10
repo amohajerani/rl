@@ -1,3 +1,52 @@
+"""
+Policy Gradient Implementation for Atari Pong
+
+This script implements a policy gradient (REINFORCE) algorithm to train an AI agent
+to play the Atari Pong game. The agent uses a convolutional neural network to learn
+a policy that maps game states to action probabilities.
+
+Key Features:
+- Uses frame differencing to detect motion and focus on the ball
+- Implements a simplified CNN architecture optimized for Pong
+- Trains using policy gradient with entropy regularization
+- Automatically saves model checkpoints and generates gameplay videos
+- Supports both CPU and GPU training
+
+Architecture:
+- Input: Preprocessed 80x80 grayscale frames with frame differencing
+- CNN layers: 2 convolutional layers with max pooling
+- Output: Action probabilities for 3 actions (NOOP, UP, DOWN)
+
+Training Process:
+- Collects trajectories from 2 episodes per batch
+- Computes discounted returns for each episode
+- Updates policy using policy gradient with normalized returns
+- Includes entropy bonus to encourage exploration
+- Saves checkpoints every 100 iterations
+
+Usage:
+    python policy_gradient.py
+
+The script will automatically:
+1. Load existing model weights if available
+2. Train the agent for 10,000 iterations
+3. Save model checkpoints every 100 iterations
+4. Generate gameplay videos for evaluation
+5. Print training progress and metrics
+
+Outputs:
+- Model weights: pong_ai_policy.pth
+- Gameplay videos: videos/pong_ai_gameplay_iter{iteration}.mp4
+
+Requirements:
+- gymnasium[atari]
+- torch
+- numpy
+- opencv-python
+- imageio
+- ale-py
+"""
+
 import gymnasium as gym
 import torch
 import torch.nn as nn
@@ -13,7 +62,8 @@ CONFIG = {
     # Environment settings
     "env_name": "ALE/Pong-v5",
     # Model architecture
-    "input_dim": (1, 80, 80),  # Increased dimensions to better preserve the ball
+    # Increased dimensions to better preserve the ball
+    "input_dim": (1, 80, 80),
     "hidden_dims": [16, 32],  # Reduced convolutional filter sizes
     "fc_dims": [128],  # Simplified fully connected layer dimensions
     "num_actions": 3,
@@ -118,12 +168,14 @@ class SimplePolicyNetwork(nn.Module):
         super(SimplePolicyNetwork, self).__init__()
 
         # Simplified convolutional layers with increased stride and pooling
-        self.conv1 = nn.Conv2d(input_dim[0], hidden_dims[0], kernel_size=5, stride=2)
+        self.conv1 = nn.Conv2d(
+            input_dim[0], hidden_dims[0], kernel_size=5, stride=2)
         self.pool1 = nn.MaxPool2d(
             kernel_size=2, stride=2
         )  # Add pooling to reduce spatial dimensions
 
-        self.conv2 = nn.Conv2d(hidden_dims[0], hidden_dims[1], kernel_size=3, stride=1)
+        self.conv2 = nn.Conv2d(
+            hidden_dims[0], hidden_dims[1], kernel_size=3, stride=1)
         self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)  # Add more pooling
 
         # Calculate the size of the flattened features after convolutions and pooling
@@ -199,7 +251,8 @@ if os.path.exists(checkpoint_path):
     print(f"Loading pre-trained model weights from {checkpoint_path}")
     policy.load_state_dict(torch.load(checkpoint_path))
 else:
-    print(f"No existing model found at {checkpoint_path}. Starting from scratch.")
+    print(
+        f"No existing model found at {checkpoint_path}. Starting from scratch.")
 
 # Training loop with policy gradient
 for iteration in range(10_000):  # 10,000 iterations
@@ -235,13 +288,15 @@ for iteration in range(10_000):  # 10,000 iterations
 
             # Convert to gym action (0=NOOP, 2=UP, 3=DOWN)
             gym_action = [0, 2, 3][action.item()]
-            raw_next_state, reward, terminated, truncated, _ = env.step(gym_action)
+            raw_next_state, reward, terminated, truncated, _ = env.step(
+                gym_action)
             done = terminated or truncated
 
             # Process the next raw state (just basic preprocessing)
             processed_next_state = preprocess_frame_basic(raw_next_state)
             # Process the frame pair (current and previous)
-            next_state = process_frame_pair(processed_next_state, processed_state)
+            next_state = process_frame_pair(
+                processed_next_state, processed_state)
 
             # Update previous processed state
             processed_state = processed_next_state
@@ -329,7 +384,8 @@ for iteration in range(10_000):  # 10,000 iterations
             gym_action = [0, 2, 3][action.item()]
 
             # Take action in environment
-            raw_next_state, reward, terminated, truncated, _ = eval_env.step(gym_action)
+            raw_next_state, reward, terminated, truncated, _ = eval_env.step(
+                gym_action)
             done = terminated or truncated
             frame = eval_env.render()
             frames.append(frame)
@@ -338,7 +394,8 @@ for iteration in range(10_000):  # 10,000 iterations
             # Process the next raw state (just basic preprocessing)
             processed_next_state = preprocess_frame_basic(raw_next_state)
             # Process the frame pair
-            next_state = process_frame_pair(processed_next_state, processed_state)
+            next_state = process_frame_pair(
+                processed_next_state, processed_state)
 
             # Update previous processed state
             processed_state = processed_next_state
@@ -347,7 +404,8 @@ for iteration in range(10_000):  # 10,000 iterations
 
         eval_env.close()
 
-        video_path = os.path.join(videos_dir, f"pong_ai_gameplay_iter{iteration}.mp4")
+        video_path = os.path.join(
+            videos_dir, f"pong_ai_gameplay_iter{iteration}.mp4")
         imageio.mimsave(video_path, frames, fps=30)
         print(f"Video saved at {video_path}")
 
